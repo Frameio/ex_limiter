@@ -29,12 +29,15 @@ defmodule ExLimiter.Plug do
 
   @limiter Application.get_env(:ex_limiter, __MODULE__)[:limiter]
   @fallback Application.get_env(:ex_limiter, __MODULE__)[:fallback]
+  
 
   defmodule Config do
-    
+    @limit Application.get_env(:ex_limiter, ExLimiter.Plug)[:limit]
+    @scale Application.get_env(:ex_limiter, ExLimiter.Plug)[:scale]
+
     defstruct [
-      scale: 1000,
-      limit: 10,
+      scale: @scale,
+      limit: @limit,
       bucket: &ExLimiter.Plug.get_bucket/1,
       consumes: nil
     ]
@@ -65,10 +68,12 @@ defmodule ExLimiter.Plug do
     |> @limiter.consume(consume_fun.(conn))
     |> case do
       {:ok, bucket} ->
+        remaining = @limiter.remaining(bucket, scale: scale, limit: limit)
+
         conn
         |> put_resp_header("x-ratelimit-limit", to_string(limit))
         |> put_resp_header("x-ratelimit-window", to_string(scale))
-        |> put_resp_header("x-ratelimit-remaining", to_string(@limiter.remaining(bucket)))
+        |> put_resp_header("x-ratelimit-remaining", to_string(remaining))
       {:error, :rate_limited} -> @fallback.render_error(conn, :rate_limited)
     end
   end
