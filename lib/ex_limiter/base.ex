@@ -19,7 +19,7 @@ defmodule ExLimiter.Base do
         limit = Keyword.get(opts, :limit, 10)
         scale = Keyword.get(opts, :scale, 1000)
 
-        round((scale - val) / limit)
+        round(max(scale - val, 0) / limit)
       end
 
       @doc """

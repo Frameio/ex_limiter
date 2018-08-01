@@ -11,7 +11,11 @@ defmodule ExLimiterTest do
       assert bucket.key == bucket_name
       assert bucket.value >= 100
 
-      {:error, :rate_limited} = ExLimiter.consume(bucket_name, 10)
+      {:ok, bucket} = ExLimiter.consume(bucket_name, 5)
+
+      assert bucket.value >= 500
+
+      {:error, :rate_limited} = ExLimiter.consume(bucket_name, 6)
     end
   end
 
