@@ -65,7 +65,7 @@ defmodule ExLimiter.Plug do
 
   def call(conn, %Config{bucket: bucket_fun, scale: scale, limit: limit, consumes: consume_fun}) do
     bucket_fun.(conn)
-    |> @limiter.consume(consume_fun.(conn))
+    |> @limiter.consume(consume_fun.(conn), scale: scale, limit: limit)
     |> case do
       {:ok, bucket} ->
         remaining = @limiter.remaining(bucket, scale: scale, limit: limit)

@@ -7,9 +7,7 @@ defmodule ExLimiter.PlugTest do
     setup [:setup_limiter, :setup_conn]
     
     test "It will supply rate limiting headers if it passes", %{limiter: config, conn: conn} do
-      conn =
-        conn
-        |> ExLimiter.Plug.call(config)
+      conn = ExLimiter.Plug.call(conn, config)
 
       refute Enum.empty?(get_resp_header(conn, "x-ratelimit-limit"))
       refute Enum.empty?(get_resp_header(conn, "x-ratelimit-window"))
@@ -20,6 +18,17 @@ defmodule ExLimiter.PlugTest do
       conn =
         %{conn | params: %{"count" => 11}}
          |> ExLimiter.Plug.call(config)
+
+      assert conn.status == 429
+    end
+
+    test "it will respect scaling params", %{limiter: config, conn: conn} do
+      config = %{config | limit: 1}
+      conn = ExLimiter.Plug.call(conn, config)
+      
+      refute conn.status == 429
+
+      conn = ExLimiter.Plug.call(conn, config)
 
       assert conn.status == 429
     end
