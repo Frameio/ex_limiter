@@ -53,16 +53,11 @@ defmodule ExLimiter.Base do
   end
 
   defp leak(storage, bucket) do
-    %Bucket{value: value, last: time} = bucket = storage.fetch(%Bucket{key: bucket})
-    now    = Utils.now()
-    amount = max(value - (now - time), 0)
-    
-    # the latency of whatever storage should be sufficiently low that we can
-    # simply refetch and not miss too many drips (while catching a previous decrement)
-    storage.refresh(%{bucket | last: now, value: amount})
-    |> case do
-      {:ok, bucket} -> bucket
-      _ -> storage.fetch(bucket)
-    end
+    storage.update(bucket, fn %Bucket{value: value, last: time} = b ->
+      now    = Utils.now()
+      amount = max(value - (now - time), 0)
+
+      %{b | last: now, value: amount}
+    end)
   end
 end

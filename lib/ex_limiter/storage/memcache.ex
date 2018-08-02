@@ -27,6 +27,18 @@ defmodule ExLimiter.Storage.Memcache do
     end
   end
 
+  def update(key, update_fun) do
+    bucket = %Bucket{key: key}
+
+    fetch(bucket)
+    |> update_fun.()
+    |> refresh()
+    |> case do
+      {:ok, b} -> b
+      {:error, _} -> fetch(bucket) # memcached latency is short enough that there probably wasn't much leaked here
+    end
+  end
+
   def consume(%Bucket{key: key} = bucket, inc) do
     case Memcachir.incr("amount_#{key}", inc) do
       {:ok, result} -> {:ok, %{bucket | value: result}}

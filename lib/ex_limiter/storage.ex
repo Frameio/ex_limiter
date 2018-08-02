@@ -15,6 +15,12 @@ defmodule ExLimiter.Storage do
   @callback refresh(bucket :: Bucket.t, type :: :hard | :soft) :: response
 
   @doc """
+  Atomically update the bucket denoted by `key` with `fun`.  Leverage whatever
+  concurrency controls are available in the given storage mechanism (eg cas for memcached)
+  """
+  @callback update(key :: binary, fun :: (Bucket.t -> Bucket.t)) :: Bucket.t
+
+  @doc """
   Consumes n elements from the bucket (atomically)
   """
   @callback consume(bucket :: Bucket.t, incr :: integer) :: {:ok, Bucket.t}
