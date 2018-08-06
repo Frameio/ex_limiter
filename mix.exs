@@ -26,19 +26,20 @@ defmodule ExLimiter.Mixfile do
     ]
   end
 
+  defp deps do
+    [
+      {:memcachir, "~> 3.2.0"},
+      {:plug, "~> 1.4"},
+      {:ex_doc, "~> 0.18.0", only: :dev}
+    ]
+  end
+
   defp docs() do
     [
       main: "readme",
       extras: ["README.md"],
       source_ref: "v#{@version}",
       source_url: "https://github.com/Frameio/ex_limiter"
-    ]
-  end
-
-  defp deps do
-    [
-      {:memcachir, git: "https://github.com/Frameio/memcachir.git"},
-      {:plug, "~> 1.4"},
     ]
   end
 
