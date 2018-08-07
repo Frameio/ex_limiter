@@ -9,21 +9,29 @@ defmodule ExLimiter.Storage.Memcache do
   def fetch(%Bucket{key: key}) do
     key_map = keys(key)
 
-    Map.keys(key_map) 
-    |> Memcachir.mget(cas: true)
-    |> case do
-      {:ok, result} -> from_memcached(result, key, key_map)
-      _ -> Bucket.new(key)
+    try do
+      Map.keys(key_map) 
+      |> Memcachir.mget(cas: true)
+      |> case do
+        {:ok, result} -> from_memcached(result, key, key_map)
+        _ -> Bucket.new(key)
+      end
+    catch
+      :exit, _ -> Bucket.new(key)
     end
   end
 
   def refresh(%Bucket{key: key} = bucket, _type \\ :soft) do
-    keys(key)
-    |> Enum.map(&mset_command(&1, bucket))
-    |> Memcachir.mset_cas()
-    |> case do
-      {:ok, _} -> {:ok, bucket}
-      {:error, error} -> {:error, error}
+    try do
+      keys(key)
+      |> Enum.map(&mset_command(&1, bucket))
+      |> Memcachir.mset_cas()
+      |> case do
+        {:ok, _} -> {:ok, bucket}
+        {:error, error} -> {:error, error}
+      end
+    catch
+      :exit, _ -> {:error, :memcached}
     end
   end
 
@@ -40,9 +48,13 @@ defmodule ExLimiter.Storage.Memcache do
   end
 
   def consume(%Bucket{key: key} = bucket, inc) do
-    case Memcachir.incr("amount_#{key}", inc) do
-      {:ok, result} -> {:ok, %{bucket | value: result}}
-      _ -> {:ok, Bucket.new(key)}
+    try do
+      case Memcachir.incr("amount_#{key}", inc) do
+        {:ok, result} -> {:ok, %{bucket | value: result}}
+        _ -> {:ok, Bucket.new(key)}
+      end
+    catch
+      :exit, _ -> {:ok, Bucket.new(key)}
     end
   end
 
