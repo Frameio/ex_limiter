@@ -1,13 +1,13 @@
 defmodule ExLimiter.Mixfile do
   use Mix.Project
 
-  @version "1.0.0"
+  @version "1.1.0"
 
   def project do
     [
       app: :ex_limiter,
       version: @version,
-      elixir: "~> 1.5",
+      elixir: "~> 1.7",
       start_permanent: Mix.env == :prod,
       elixirc_paths: elixirc_paths(Mix.env),
       deps: deps(),
@@ -28,9 +28,9 @@ defmodule ExLimiter.Mixfile do
 
   defp deps do
     [
-      {:memcachir, git: "https://github.com/Frameio/memcachir"},
+      {:memcachir, "~> 3.2.2"},
       {:plug, "~> 1.4"},
-      {:ex_doc, "~> 0.18.0", only: :dev}
+      {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
 
