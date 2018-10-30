@@ -7,7 +7,7 @@ defmodule ExLimiterTest do
     test "it will rate limit" do
       bucket_name = bucket()
       {:ok, bucket} = ExLimiter.consume(bucket_name, 1)
-      
+
       assert bucket.key == bucket_name
       assert bucket.value >= 100
 
@@ -16,6 +16,22 @@ defmodule ExLimiterTest do
       assert bucket.value >= 500
 
       {:error, :rate_limited} = ExLimiter.consume(bucket_name, 6)
+    end
+  end
+
+  describe "#delete" do
+    test "It will wipe a bucket" do
+      bucket_name = bucket()
+
+      {:ok, bucket} = ExLimiter.consume(bucket_name, 5)
+
+      assert bucket.value >= 500
+
+      ExLimiter.delete(bucket_name)
+
+      {:ok, bucket} = ExLimiter.consume(bucket_name, 1)
+
+      assert bucket.value <= 500
     end
   end
 

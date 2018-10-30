@@ -1,7 +1,7 @@
 defmodule ExLimiter.Storage do
   alias ExLimiter.Bucket
   @type response :: {:ok, Bucket.t} | {:error, any}
-  
+
   @doc """
   Fetch the current state of the given bucket
   """
@@ -24,4 +24,6 @@ defmodule ExLimiter.Storage do
   Consumes n elements from the bucket (atomically)
   """
   @callback consume(bucket :: Bucket.t, incr :: integer) :: {:ok, Bucket.t}
+
+  @callback delete(bucket :: Bucket.t) :: Bucket.t
 end

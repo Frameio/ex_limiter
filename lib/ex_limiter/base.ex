@@ -23,8 +23,8 @@ defmodule ExLimiter.Base do
       end
 
       @doc """
-      Consumes `amount` from the rate limiter aliased by bucket. 
-      
+      Consumes `amount` from the rate limiter aliased by bucket.
+
       `opts` params are:
       * `:limit` - the maximum amount for the rate limiter (default 10)
       * `:scale` - the duration under which `:limit` applies in milliseconds
@@ -32,6 +32,8 @@ defmodule ExLimiter.Base do
       @spec consume(bucket :: binary, amount :: integer, opts :: keyword) :: {:ok, Bucket.t} | {:error, :rate_limited}
       def consume(bucket, amount \\ 1, opts \\ []),
         do: consume(@storage, bucket, amount, opts)
+
+      def delete(bucket), do: @storage.delete(%Bucket{key: bucket})
     end
   end
 
@@ -42,7 +44,7 @@ defmodule ExLimiter.Base do
   def consume(storage, bucket, amount, opts) do
     limit = Keyword.get(opts, :limit, 10)
     scale = Keyword.get(opts, :scale, 1000)
-    
+
     mult = scale / limit
     incr = round(amount * mult)
 

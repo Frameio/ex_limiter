@@ -1,7 +1,7 @@
 defmodule ExLimiter.Storage.Memcache do
   @moduledoc """
   Token bucket backend written for memcache. Stores the last timestamp
-  and amount in separate keys, and utilizes memcache increments for consumption 
+  and amount in separate keys, and utilizes memcache increments for consumption
   """
   @behaviour ExLimiter.Storage
   alias ExLimiter.{Bucket, Utils}
@@ -10,7 +10,7 @@ defmodule ExLimiter.Storage.Memcache do
     key_map = keys(key)
 
     try do
-      Map.keys(key_map) 
+      Map.keys(key_map)
       |> Memcachir.mget(cas: true)
       |> case do
         {:ok, result} -> from_memcached(result, key, key_map)
@@ -32,6 +32,18 @@ defmodule ExLimiter.Storage.Memcache do
       end
     catch
       :exit, _ -> {:error, :memcached}
+    end
+  end
+
+  def delete(%Bucket{key: key}) do
+    try do
+      keys(key)
+      |> Map.keys()
+      |> Enum.map(&Memcachir.delete/1)
+
+      Bucket.new(key)
+    catch
+      :exit, _ -> Bucket.new(key)
     end
   end
 
@@ -67,7 +79,7 @@ defmodule ExLimiter.Storage.Memcache do
     |> Bucket.new(key)
   end
 
-  defp mset_command({key, bucket_key}, %Bucket{version: versions} = b) do 
+  defp mset_command({key, bucket_key}, %Bucket{version: versions} = b) do
     value = Map.get(b, bucket_key) |> to_string()
     {key, value, Map.get(versions, bucket_key, 0)}
   end
