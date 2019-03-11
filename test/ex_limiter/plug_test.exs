@@ -1,11 +1,11 @@
 defmodule ExLimiter.PlugTest do
   use ExUnit.Case
   use Plug.Test
-  alias ExLimiter.TestUtils 
+  alias ExLimiter.TestUtils
 
   describe "#call/2" do
     setup [:setup_limiter, :setup_conn]
-    
+
     test "It will supply rate limiting headers if it passes", %{limiter: config, conn: conn} do
       conn = ExLimiter.Plug.call(conn, config)
 
@@ -25,16 +25,47 @@ defmodule ExLimiter.PlugTest do
     test "it will respect scaling params", %{limiter: config, conn: conn} do
       config = %{config | limit: 1}
       conn = ExLimiter.Plug.call(conn, config)
-      
+
       refute conn.status == 429
 
       conn = ExLimiter.Plug.call(conn, config)
 
       assert conn.status == 429
     end
+
+    test "it will decorate a connection on ok", %{limiter: config, conn: conn} do
+      config = %{config | decorate: &decorate/2}
+      conn = ExLimiter.Plug.call(conn, config)
+
+      refute conn.status == 429
+
+      %{ex_limiter: %{bucket_name: bucket_name, bucket_version: bucket_version}} = conn.assigns
+
+      assert String.ends_with?(bucket_name, "127.0.0.1")
+      assert bucket_version == %{last: 0, value: 0}
+    end
+
+    test "it will decorate a connection on error", %{limiter: config, conn: conn} do
+      config = %{config | decorate: &decorate/2, limit: 1}
+      conn = ExLimiter.Plug.call(conn, config)
+      conn = ExLimiter.Plug.call(conn, config)
+
+      assert conn.status == 429
+
+      %{ex_limiter: %{bucket_name: bucket_name}} = conn.assigns
+
+      assert String.ends_with?(bucket_name, "127.0.0.1")
+    end
   end
 
-  defp setup_conn(_) do 
+  defp decorate(conn, {:ok, %{key: bucket_name, version: bucket_version}}) do
+    assign(conn, :ex_limiter, %{bucket_name: bucket_name, bucket_version: bucket_version})
+  end
+  defp decorate(conn, {:rate_limited, bucket_name}) do
+    assign(conn, :ex_limiter, %{bucket_name: bucket_name})
+  end
+
+  defp setup_conn(_) do
     random =  TestUtils.rand_string()
     conn =
       conn(:get, "/")
