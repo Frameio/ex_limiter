@@ -42,18 +42,15 @@ defmodule ExLimiter.Plug do
   @limiter Application.get_env(:ex_limiter, __MODULE__)[:limiter]
   @fallback Application.get_env(:ex_limiter, __MODULE__)[:fallback]
 
-
   defmodule Config do
     @limit Application.get_env(:ex_limiter, ExLimiter.Plug)[:limit]
     @scale Application.get_env(:ex_limiter, ExLimiter.Plug)[:scale]
 
-    defstruct [
-      scale: @scale,
-      limit: @limit,
-      bucket: &ExLimiter.Plug.get_bucket/1,
-      consumes: nil,
-      decorate: nil,
-    ]
+    defstruct scale: @scale,
+              limit: @limit,
+              bucket: &ExLimiter.Plug.get_bucket/1,
+              consumes: nil,
+              decorate: nil
 
     def new(opts) do
       contents =
@@ -66,7 +63,7 @@ defmodule ExLimiter.Plug do
   end
 
   def get_bucket(%{private: %{phoenix_controller: contr, phoenix_action: ac}} = conn) do
-    "#{contr}.#{ac}.#{ip(conn)}"
+    {:ok, "#{contr}.#{ac}.#{ip(conn)}"}
   end
 
   def render_error(conn, :rate_limited) do
@@ -75,29 +72,39 @@ defmodule ExLimiter.Plug do
     |> halt()
   end
 
-  @spec decorate(Plug.Conn.t, {:ok, Bucket.t} | {:rate_limited, bucket_name :: binary}) :: Plug.Conn.t
+  @spec decorate(Plug.Conn.t(), {:ok, Bucket.t()} | {:rate_limited, bucket_name :: binary} | {:halted, any}) ::
+          Plug.Conn.t()
   def decorate(conn, _), do: conn
 
   def init(opts), do: Config.new(opts)
 
-  def call(conn, %Config{bucket: bucket_fun, scale: scale, limit: limit, consumes: consume_fun, decorate: decorate_fun}) do
-    bucket_name = bucket_fun.(conn)
+  def call(conn, %Config{
+        bucket: bucket_fun,
+        scale: scale,
+        limit: limit,
+        consumes: consume_fun,
+        decorate: decorate_fun
+      }) do
+    with {:ok, bucket_name} <- bucket_fun.(conn) do
+      bucket_name
+      |> @limiter.consume(consume_fun.(conn), scale: scale, limit: limit)
+      |> case do
+        {:ok, bucket} = response ->
+          remaining = @limiter.remaining(bucket, scale: scale, limit: limit)
 
-    bucket_name
-    |> @limiter.consume(consume_fun.(conn), scale: scale, limit: limit)
-    |> case do
-      {:ok, bucket} = response ->
-        remaining = @limiter.remaining(bucket, scale: scale, limit: limit)
+          conn
+          |> put_resp_header("x-ratelimit-limit", to_string(limit))
+          |> put_resp_header("x-ratelimit-window", to_string(scale))
+          |> put_resp_header("x-ratelimit-remaining", to_string(remaining))
+          |> decorate_fun.(response)
 
-        conn
-        |> put_resp_header("x-ratelimit-limit", to_string(limit))
-        |> put_resp_header("x-ratelimit-window", to_string(scale))
-        |> put_resp_header("x-ratelimit-remaining", to_string(remaining))
-        |> decorate_fun.(response)
-      {:error, :rate_limited} ->
-        conn
-        |> decorate_fun.({:rate_limited, bucket_name})
-        |> @fallback.render_error(:rate_limited)
+        {:error, :rate_limited} ->
+          conn
+          |> decorate_fun.({:rate_limited, bucket_name})
+          |> @fallback.render_error(:rate_limited)
+      end
+    else
+      {:halt, reason} -> decorate_fun.(conn, {:halted, reason})
     end
   end
 
