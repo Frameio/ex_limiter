@@ -40,12 +40,11 @@ defmodule ExLimiter.Plug do
   import Plug.Conn
 
   @limiter Application.get_env(:ex_limiter, __MODULE__)[:limiter]
-  @fallback Application.get_env(:ex_limiter, __MODULE__)[:fallback]
-
 
   defmodule Config do
     @limit Application.get_env(:ex_limiter, ExLimiter.Plug)[:limit]
     @scale Application.get_env(:ex_limiter, ExLimiter.Plug)[:scale]
+    @fallback Application.get_env(:ex_limiter, ExLimiter.Plug)[:fallback]
 
     defstruct [
       scale: @scale,
@@ -53,6 +52,7 @@ defmodule ExLimiter.Plug do
       bucket: &ExLimiter.Plug.get_bucket/1,
       consumes: nil,
       decorate: nil,
+      fallback: @fallback,
     ]
 
     def new(opts) do
@@ -80,7 +80,7 @@ defmodule ExLimiter.Plug do
 
   def init(opts), do: Config.new(opts)
 
-  def call(conn, %Config{bucket: bucket_fun, scale: scale, limit: limit, consumes: consume_fun, decorate: decorate_fun}) do
+  def call(conn, %Config{bucket: bucket_fun, scale: scale, limit: limit, consumes: consume_fun, decorate: decorate_fun, fallback: fallback}) do
     bucket_name = bucket_fun.(conn)
 
     bucket_name
@@ -97,7 +97,7 @@ defmodule ExLimiter.Plug do
       {:error, :rate_limited} ->
         conn
         |> decorate_fun.({:rate_limited, bucket_name})
-        |> @fallback.render_error(:rate_limited)
+        |> fallback.render_error(:rate_limited)
     end
   end
 
