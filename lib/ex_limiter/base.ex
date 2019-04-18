@@ -15,11 +15,15 @@ defmodule ExLimiter.Base do
       import ExLimiter.Base
       @storage unquote(storage)
 
-      def remaining(%Bucket{value: val}, opts \\ []) do
-        limit = Keyword.get(opts, :limit, 10)
-        scale = Keyword.get(opts, :scale, 1000)
+      @spec remaining(bucket :: binary | Bucket.t(), opts :: keyword) :: {:ok, Bucket.t} | {:error, :rate_limited}
+      def remaining(bucket, opts \\ [])
 
-        round(max(scale - val, 0) / limit)
+      def remaining(bucket, opts) when is_binary(bucket) do
+        remaining(@storage, bucket, opts)
+      end
+
+      def remaining(%Bucket{} = bucket, opts) do
+        remaining(@storage, bucket, opts)
       end
 
       @doc """
@@ -30,8 +34,9 @@ defmodule ExLimiter.Base do
       * `:scale` - the duration under which `:limit` applies in milliseconds
       """
       @spec consume(bucket :: binary, amount :: integer, opts :: keyword) :: {:ok, Bucket.t} | {:error, :rate_limited}
-      def consume(bucket, amount \\ 1, opts \\ []),
-        do: consume(@storage, bucket, amount, opts)
+      def consume(bucket, amount \\ 1, opts \\ []) do
+        consume(@storage, bucket, amount, opts)
+      end
 
       def delete(bucket), do: @storage.delete(%Bucket{key: bucket})
     end
@@ -52,6 +57,18 @@ defmodule ExLimiter.Base do
       %Bucket{value: v} = b when v + incr <= scale -> storage.consume(b, incr)
       _ -> {:error, :rate_limited}
     end
+  end
+
+  @spec remaining(atom, binary, keyword) :: integer
+  def remaining(storage, bucket, opts) do
+    limit = Keyword.get(opts, :limit, 10)
+    scale = Keyword.get(opts, :scale, 1000)
+
+    %Bucket{value: val} = leak(storage, bucket)
+
+    mult = scale / limit
+
+    round(max((scale - val) / mult, 0))
   end
 
   defp leak(storage, bucket) do
