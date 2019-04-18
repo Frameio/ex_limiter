@@ -7,6 +7,16 @@ Implements leaky bucket rate limiting ([wiki](https://en.wikipedia.org/wiki/Leak
 config :ex_limiter, :storage, MyStorage
 ```
 
+If you want to use Memcache as Storage. Add memcachir into your extra_applications in `mix.exs`
+
+```elixir
+def application do
+  [
+    extra_applications: [:memcachir]
+  ]
+end
+```
+
 usage once configured is:
 
 ```elixir
