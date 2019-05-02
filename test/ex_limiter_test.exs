@@ -35,6 +35,16 @@ defmodule ExLimiterTest do
     end
   end
 
+  describe "#remaining" do
+    test "It will properly deconvert the remaining capacity in a bucket" do
+      bucket_name = bucket()
+
+      {:ok, bucket} = ExLimiter.consume(bucket_name, 5)
+
+      assert ExLimiter.remaining(bucket) == 5
+    end
+  end
+
   defp bucket() do
     "test_bucket_#{TestUtils.rand_string()}"
   end
