@@ -11,6 +11,21 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
     max_size: 50_000,
     eviction_count: 1000
   ```
+
+  It will also publish these metrics via telemetry:
+
+  ```
+  [:ex_limiter, :shards, :map_size],
+  [:ex_limiter, :shards, :evictions],
+  [:ex_limiter, :shards, :expirations]
+  ```
+
+  You can auto-configure a telemetry handler via:
+
+  ```
+  config :ex_limiter, ExLimiter.Storage.PG2Shard,
+    telemetry: MyTelemetryHandler
+  ```
   """
   use GenServer
   alias ExLimiter.Bucket
@@ -20,7 +35,11 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   @expiry 10 * 60_000
   @eviction_count Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:eviction_count] || 1000
   @max_size Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:max_size] || 50_000
-  @monitor Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:monitor] || __MODULE__
+  @telemetry_events [
+    [:ex_limiter, :shards, :map_size],
+    [:ex_limiter, :shards, :evictions],
+    [:ex_limiter, :shards, :expirations]
+  ]
 
   def start_link() do
     GenServer.start_link(__MODULE__, [])
@@ -59,15 +78,11 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
 
   def handle_info(:prune, buckets) do
     now = Utils.now()
-    buckets =
-      buckets
-      |> Enum.reject(fn
-        {_, %Bucket{last: last}} when now - @expiry > last -> true
-        _ -> false
-      end)
-      |> Enum.into(%{})
+    to_drop = for {k, %{last: last}} <- buckets, now - @expiry > last, do: k
+    buckets = Map.drop(buckets, to_drop)
 
-    do_monitor(:buckets, buckets)
+    :telemetry.execute([:ex_limiter, :shards, :map_size], map_size(buckets))
+    :telemetry.execute([:ex_limiter, :shards, :expirations], length(to_drop))
     {:noreply, buckets}
   end
 
@@ -78,22 +93,22 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
     }
   end
 
-  def monitor(_name, _buckets), do: :ok
+  def handle_event(_, _, _, _), do: :ok
+
+  def telemetry_events(), do: @telemetry_events
 
   defp upsert(buckets, key, bucket) when map_size(buckets) >= @max_size do
     to_delete =
       Enum.sort_by(buckets, fn {_, %{last: last}} -> last end)
-      |> Enum.map(&elem(&1, 0))
       |> Enum.take(@eviction_count)
+      |> Enum.map(&elem(&1, 0))
 
-    do_monitor(:eviction, length(to_delete))
+    :telemetry.execute([:ex_limiter, :shards, :evictions], length(to_delete))
     buckets
     |> Map.drop(to_delete)
     |> Map.put(key, bucket)
   end
   defp upsert(buckets, key, bucket), do: Map.put(buckets, key, bucket)
-
-  defp do_monitor(name, buckets), do: @monitor.monitor(name, buckets)
 
   defp fetch(buckets, key) do
     case buckets do
