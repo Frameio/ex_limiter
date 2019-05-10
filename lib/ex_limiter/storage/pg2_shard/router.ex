@@ -13,7 +13,7 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
   @process_group :ex_limiter_shards
   @table_name :ex_limiter_router
 
-  def start_link(_) do
+  def start_link(_args \\ :ok) do
     GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
