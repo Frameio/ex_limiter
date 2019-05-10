@@ -7,7 +7,7 @@ defmodule ExLimiter.Mixfile do
     [
       app: :ex_limiter,
       version: @version,
-      elixir: "~> 1.5",
+      elixir: "~> 1.7",
       start_permanent: Mix.env == :prod,
       elixirc_paths: elixirc_paths(Mix.env),
       deps: deps(),
@@ -28,7 +28,7 @@ defmodule ExLimiter.Mixfile do
 
   defp deps do
     [
-      {:memcachir, "~> 3.2.0"},
+      {:memcachir, "~> 3.2.0", run_in_test()},
       {:plug, "~> 1.4"},
       {:libring, "~> 1.0"},
       {:ex_doc, "~> 0.19", only: :dev}
@@ -42,6 +42,13 @@ defmodule ExLimiter.Mixfile do
       source_ref: "v#{@version}",
       source_url: "https://github.com/Frameio/ex_limiter"
     ]
+  end
+
+  defp run_in_test() do
+    case Mix.env do
+      :test -> []
+      _ -> [runtime: false]
+    end
   end
 
   defp description() do
