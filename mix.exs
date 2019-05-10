@@ -1,7 +1,7 @@
 defmodule ExLimiter.Mixfile do
   use Mix.Project
 
-  @version "1.2.2"
+  @version "1.3.0"
 
   def project do
     [
@@ -30,6 +30,7 @@ defmodule ExLimiter.Mixfile do
     [
       {:memcachir, "~> 3.2.0"},
       {:plug, "~> 1.4"},
+      {:libring, "~> 1.0"},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
