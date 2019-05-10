@@ -81,8 +81,8 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
     to_drop = for {k, %{last: last}} <- buckets, now - @expiry > last, do: k
     buckets = Map.drop(buckets, to_drop)
 
-    :telemetry.execute([:ex_limiter, :shards, :map_size], map_size(buckets))
-    :telemetry.execute([:ex_limiter, :shards, :expirations], length(to_drop))
+    :telemetry.execute([:ex_limiter, :shards, :map_size], %{value: map_size(buckets)})
+    :telemetry.execute([:ex_limiter, :shards, :expirations], %{value: length(to_drop)})
     {:noreply, buckets}
   end
 
@@ -103,7 +103,7 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
       |> Enum.take(@eviction_count)
       |> Enum.map(&elem(&1, 0))
 
-    :telemetry.execute([:ex_limiter, :shards, :evictions], length(to_delete))
+    :telemetry.execute([:ex_limiter, :shards, :evictions], %{value: length(to_delete)})
     buckets
     |> Map.drop(to_delete)
     |> Map.put(key, bucket)
