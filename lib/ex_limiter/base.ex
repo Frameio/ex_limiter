@@ -48,18 +48,14 @@ defmodule ExLimiter.Base do
     mult = scale / limit
     incr = round(amount * mult)
 
-    case leak(storage, bucket) do
-      %Bucket{value: v} = b when v + incr <= scale -> storage.consume(b, incr)
-      _ -> {:error, :rate_limited}
-    end
-  end
-
-  defp leak(storage, bucket) do
-    storage.update(bucket, fn %Bucket{value: value, last: time} = b ->
+    storage.leak_and_consume(bucket, fn %Bucket{value: value, last: time} = b ->
       now    = Utils.now()
       amount = max(value - (now - time), 0)
 
       %{b | last: now, value: amount}
-    end)
+    end, fn
+      %Bucket{value: v} = b when v + incr <= scale -> b
+      _ -> {:error, :rate_limited}
+    end, incr)
   end
 end

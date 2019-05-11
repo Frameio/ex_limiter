@@ -29,6 +29,7 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   def handle_call(:fetch, _from, table), do: {:reply, table, table}
 
   def handle_info(:expire, table) do
+    expire()
     now = Utils.now()
     count = :ets.select_delete(table, fun do {_,_,updated_at} when updated_at < (^now - ^@expiry) -> true end)
     :telemetry.execute([:ex_limiter, :shards, :expired], %{value: count})
@@ -36,6 +37,7 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   end
 
   def handle_info(:prune, table) do
+    prune()
     size = :ets.info(table, :size)
     if size >= @max_size do
       count = remove(table, @eviction_count)

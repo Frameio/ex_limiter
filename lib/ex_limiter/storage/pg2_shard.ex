@@ -18,8 +18,7 @@ defmodule ExLimiter.Storage.PG2Shard do
   supervise(ExLimiter.Storage.PG2Shard.Supervisor, [])
   ```
   """
-  @behaviour ExLimiter.Storage
-  alias ExLimiter.Bucket
+  use ExLimiter.Storage
   alias ExLimiter.Storage.PG2Shard.Router
 
   def fetch(%Bucket{key: key}),
@@ -37,6 +36,9 @@ defmodule ExLimiter.Storage.PG2Shard do
 
   def consume(%Bucket{key: key}, incr),
     do: {:ok, with_worker(key, &call(&1, {:consume, key, incr}))}
+
+  def leak_and_consume(key, update_fn, boundary_fn, incr),
+    do: with_worker(key, &call(&1, {:leak_and_consume, key, update_fn, boundary_fn, incr}))
 
   defp call(pid, operation), do: GenServer.call(pid, operation)
 

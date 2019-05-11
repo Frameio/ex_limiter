@@ -59,6 +59,16 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
     {:reply, bucket, upsert(table, key, bucket)}
   end
 
+  def handle_call({:leak_and_consume, key, update_fn, boundary_fn, incr}, _from, table) do
+    %{value: val} = bucket = fetch(table, key) |> update_fn.()
+    case boundary_fn.(bucket) do
+      %{} = bucket ->
+        bucket = %{bucket | value: val + incr}
+        {:reply, {:ok, bucket}, upsert(table, key, bucket)}
+      {:error, _} = error -> {:reply, error, upsert(table, key, bucket)}
+    end
+  end
+
   def handle_call({:fetch, key}, _from, table) do
     {:reply, fetch(table, key), table}
   end

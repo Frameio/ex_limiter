@@ -3,8 +3,8 @@ defmodule ExLimiter.Storage.Memcache do
   Token bucket backend written for memcache. Stores the last timestamp
   and amount in separate keys, and utilizes memcache increments for consumption
   """
-  @behaviour ExLimiter.Storage
-  alias ExLimiter.{Bucket, Utils}
+  use ExLimiter.Storage
+  alias ExLimiter.Utils
 
   def fetch(%Bucket{key: key}) do
     key_map = keys(key)

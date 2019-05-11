@@ -1,5 +1,20 @@
 defmodule ExLimiter.Storage do
   alias ExLimiter.Bucket
+
+  defmacro __using__(_) do
+    quote do
+      alias ExLimiter.Bucket
+      @behaviour ExLimiter.Storage
+
+      def leak_and_consume(bucket, update_fn, boundary_fn, incr) do
+        with %Bucket{} = bucket <- update(bucket, update_fn),
+             %Bucket{} = bucket <- boundary_fn.(bucket),
+          do: consume(bucket, incr)
+      end
+
+      defoverridable [leak_and_consume: 4]
+    end
+  end
   @type response :: {:ok, Bucket.t} | {:error, any}
 
   @doc """
