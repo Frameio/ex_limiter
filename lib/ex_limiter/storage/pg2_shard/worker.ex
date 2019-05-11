@@ -29,12 +29,9 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   """
   use GenServer
   alias ExLimiter.Bucket
-  alias ExLimiter.Utils
+  alias ExLimiter.Storage.PG2Shard.Pruner
 
   @process_group :ex_limiter_shards
-  @expiry 10 * 60_000
-  @eviction_count Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:eviction_count] || 1000
-  @max_size Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:max_size] || 50_000
   @telemetry_events [
     [:ex_limiter, :shards, :map_size],
     [:ex_limiter, :shards, :evictions],
@@ -48,42 +45,31 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   def init(_) do
     :pg2.create(@process_group)
     :pg2.join(@process_group, self())
-    prune()
-
-    {:ok, %{}}
+    {:ok, Pruner.table()}
   end
 
-  def handle_call({:update, key, fun}, _from, buckets) do
-    bucket = fetch(buckets, key) |> fun.()
-    {:reply, bucket, upsert(buckets, key, bucket)}
+  def handle_call({:update, key, fun}, _from, table) do
+    bucket = fetch(table, key) |> fun.()
+    {:reply, bucket, upsert(table, key, bucket)}
   end
 
-  def handle_call({:consume, key, amount}, _from, buckets) do
-    %{value: val} = bucket = fetch(buckets, key)
+  def handle_call({:consume, key, amount}, _from, table) do
+    %{value: val} = bucket = fetch(table, key)
     bucket = %{bucket | value: val + amount}
-    {:reply, bucket, upsert(buckets, key, bucket)}
+    {:reply, bucket, upsert(table, key, bucket)}
   end
 
-  def handle_call({:fetch, key}, _from, buckets) do
-    {:reply, fetch(buckets, key), buckets}
+  def handle_call({:fetch, key}, _from, table) do
+    {:reply, fetch(table, key), table}
   end
 
-  def handle_call({:set, %Bucket{key: k} = bucket}, _from, buckets) do
-    {:reply, bucket, upsert(buckets, k, bucket)}
+  def handle_call({:set, %Bucket{key: k} = bucket}, _from, table) do
+    {:reply, bucket, upsert(table, k, bucket)}
   end
 
-  def handle_call({:delete, key}, _from, buckets) do
-    {:reply, :ok, Map.delete(buckets, key)}
-  end
-
-  def handle_info(:prune, buckets) do
-    now = Utils.now()
-    to_drop = for {k, %{last: last}} <- buckets, now - @expiry > last, do: k
-    buckets = Map.drop(buckets, to_drop)
-
-    :telemetry.execute([:ex_limiter, :shards, :map_size], %{value: map_size(buckets)})
-    :telemetry.execute([:ex_limiter, :shards, :expirations], %{value: length(to_drop)})
-    {:noreply, buckets}
+  def handle_call({:delete, key}, _from, table) do
+    :ets.delete(table, key)
+    {:reply, :ok, table}
   end
 
   def child_spec(_args) do
@@ -97,25 +83,15 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
 
   def telemetry_events(), do: @telemetry_events
 
-  defp upsert(buckets, key, bucket) when map_size(buckets) >= @max_size do
-    to_delete =
-      Enum.sort_by(buckets, fn {_, %{last: last}} -> last end)
-      |> Enum.take(@eviction_count)
-      |> Enum.map(&elem(&1, 0))
-
-    :telemetry.execute([:ex_limiter, :shards, :evictions], %{value: length(to_delete)})
-    buckets
-    |> Map.drop(to_delete)
-    |> Map.put(key, bucket)
+  defp upsert(table, key, bucket) do
+    :ets.insert(table, {key, bucket.last, bucket})
+    table
   end
-  defp upsert(buckets, key, bucket), do: Map.put(buckets, key, bucket)
 
-  defp fetch(buckets, key) do
-    case buckets do
-      %{^key => bucket} -> bucket
+  defp fetch(table, key) do
+    case :ets.lookup(table, key) do
+      [{_, _, bucket}] -> bucket
       _ -> Bucket.new(key)
     end
   end
-
-  defp prune(), do: Process.send_after(self(), :prune, 30_000)
 end
