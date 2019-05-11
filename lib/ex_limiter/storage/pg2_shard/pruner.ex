@@ -6,11 +6,14 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   use GenServer
   import Ex2ms
   alias ExLimiter.Utils
+  alias ExLimiter.Storage.PG2Shard
 
   @table_name :exlimiter_buckets
-  @expiry 10 * 60_000
-  @eviction_count Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:eviction_count] || 1000
-  @max_size Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:max_size] || 50_000
+  @expiry Application.get_env(:ex_limiter, PG2Shard)[:expiry] || 10 * 60_000
+  @eviction_count Application.get_env(:ex_limiter, PG2Shard)[:eviction_count] || 1000
+  @max_size Application.get_env(:ex_limiter, PG2Shard)[:max_size] || 50_000
+  @prune_interval Application.get_env(:ex_limiter, PG2Shard)[:prune_interval] || 5_000
+  @eviction_interval Application.get_env(:ex_limiter, PG2Shard)[:eviction_interval] || 30_000
 
   def start_link(_args \\ :ok) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -31,8 +34,8 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   def handle_info(:expire, table) do
     expire()
     now = Utils.now()
-    count = :ets.select_delete(table, fun do {_,_,updated_at} when updated_at < (^now - ^@expiry) -> true end)
-    :telemetry.execute([:ex_limiter, :shards, :expired], %{value: count})
+    count = :ets.select_delete(table, fun do {_, updated_at, _} when updated_at < (^now - ^@expiry) -> true end)
+    :telemetry.execute([:ex_limiter, :shards, :expirations], %{value: count})
     {:noreply, table}
   end
 
@@ -43,7 +46,7 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
       count = remove(table, @eviction_count)
       :telemetry.execute([:ex_limiter, :shards, :evictions], %{value: count})
     end
-    :telemetry.execute([:ex_limiter, :shards, :map_size], %{value: size})
+    :telemetry.execute([:ex_limiter, :shards, :size], %{value: size})
     {:noreply, table}
   end
 
@@ -54,7 +57,7 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
     |> Enum.count()
   end
 
-  defp prune(), do: Process.send_after(self(), :prune, 5_000)
+  defp prune(), do: Process.send_after(self(), :prune, @prune_interval)
 
-  defp expire(), do: Process.send_after(self(), :expire, 30_000)
+  defp expire(), do: Process.send_after(self(), :expire, @eviction_interval)
 end

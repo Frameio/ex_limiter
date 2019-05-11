@@ -33,7 +33,7 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
 
   @process_group :ex_limiter_shards
   @telemetry_events [
-    [:ex_limiter, :shards, :map_size],
+    [:ex_limiter, :shards, :size],
     [:ex_limiter, :shards, :evictions],
     [:ex_limiter, :shards, :expirations]
   ]
@@ -60,12 +60,12 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   end
 
   def handle_call({:leak_and_consume, key, update_fn, boundary_fn, incr}, _from, table) do
-    %{value: val} = bucket = fetch(table, key) |> update_fn.()
-    case boundary_fn.(bucket) do
-      %{} = bucket ->
-        bucket = %{bucket | value: val + incr}
-        {:reply, {:ok, bucket}, upsert(table, key, bucket)}
-      {:error, _} = error -> {:reply, error, upsert(table, key, bucket)}
+    with %{value: val} = bucket <- fetch(table, key) |> update_fn.(),
+         {_old_bucket, %{} = bucket} <- {bucket, boundary_fn.(bucket)} do
+      bucket = %{bucket | value: val + incr}
+      {:reply, {:ok, bucket}, upsert(table, key, bucket)}
+    else
+      {bucket, {:error, _} = error} -> {:reply, error, upsert(table, key, bucket)}
     end
   end
 
