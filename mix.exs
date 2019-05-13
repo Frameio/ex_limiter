@@ -1,7 +1,7 @@
 defmodule ExLimiter.Mixfile do
   use Mix.Project
 
-  @version "1.3.8"
+  @version "1.3.9"
 
   def project do
     [
