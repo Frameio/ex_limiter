@@ -37,8 +37,11 @@ defmodule ExLimiter.Storage.PG2Shard do
   def consume(%Bucket{key: key}, incr),
     do: {:ok, with_worker(key, &call(&1, {:consume, key, incr}))}
 
-  def leak_and_consume(key, update_fn, boundary_fn, incr),
-    do: with_worker(key, &call(&1, {:leak_and_consume, key, update_fn, boundary_fn, incr}))
+  def leak_and_consume(key, update_fn, boundary_fn, incr) do
+    with_worker(key, fn pid ->
+      call(pid, {:leak_and_consume, key, update_fn, boundary_fn, incr})
+    end, {:ok, Bucket.new(key)})
+  end
 
   defp call(pid, operation), do: GenServer.call(pid, operation)
 
@@ -46,12 +49,12 @@ defmodule ExLimiter.Storage.PG2Shard do
     try do
       case Router.shard(key) do
         pid when is_pid(pid) -> fun.(pid)
-        _ -> fallback || %Bucket{key: key}
+        _ -> fallback || Bucket.new(key)
       end
     rescue
-      _error -> fallback || %Bucket{key: key}
+      _error -> fallback || Bucket.new(key)
     catch
-      :exit, _ -> fallback || %Bucket{key: key}
+      :exit, _ -> fallback || Bucket.new(key)
     end
   end
 end
