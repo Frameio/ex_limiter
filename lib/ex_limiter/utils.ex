@@ -1,6 +1,20 @@
 defmodule ExLimiter.Utils do
   def now(), do: :os.system_time(:millisecond)
 
+  def batched_ets(table, match_spec \\ {:"$1", :_, :_}, batch_size \\ 1000, total \\ 100_000, fnc) do
+    :ets.match(table, match_spec, batch_size)
+    |> process_batch(0, total, fnc)
+  end
+
+  defp process_batch(_, count, total, _) when count >= total, do: count
+  defp process_batch({elem, cnt}, count, total, fnc) do
+    fnc.(elem)
+
+    :ets.match(cnt)
+    |> process_batch(length(elem) + count, total, fnc)
+  end
+  defp process_batch(:"$end_of_table", count, _, _), do: count
+
   def ets_stream(table) do
     Stream.resource(
       fn -> :ets.first(table) end,

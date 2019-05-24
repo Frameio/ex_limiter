@@ -17,6 +17,21 @@ defmodule ExLimiterTest do
 
       {:error, :rate_limited} = ExLimiter.consume(bucket_name, 6)
     end
+
+    test "it will rate limit for custom scale/limits" do
+      bucket_name = bucket()
+      args = [scale: 60_000, limit: 50]
+      {:ok, bucket} = ExLimiter.consume(bucket_name, 1, args)
+
+      assert bucket.key == bucket_name
+      assert bucket.value >= 100
+
+      for _ <- 0..10, do: {:ok, _} = ExLimiter.consume(bucket_name, 1, args)
+
+      assert bucket.value >= 500
+
+      {:error, :rate_limited} = ExLimiter.consume(bucket_name, 40, args)
+    end
   end
 
   describe "#delete" do

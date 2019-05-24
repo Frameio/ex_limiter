@@ -45,16 +45,17 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
     if size >= @max_size do
       count = remove(table, @eviction_count)
       :telemetry.execute([:ex_limiter, :shards, :evictions], %{value: count})
+      :erlang.garbage_collect()
     end
     :telemetry.execute([:ex_limiter, :shards, :size], %{value: size})
     {:noreply, table}
   end
 
-  defp remove(table, count) do
-    Utils.ets_stream(table)
-    |> Stream.take(count)
-    |> Stream.each(&:ets.delete(table, &1))
-    |> Enum.count()
+  def remove(table, count) do
+    Utils.batched_ets(table, {:"$1",  :_,  :_}, 1000, count, fn keys ->
+      for [key] <- keys,
+        do: :ets.delete(table, key)
+    end)
   end
 
   defp prune(), do: Process.send_after(self(), :prune, @prune_interval)
