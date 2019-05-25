@@ -45,10 +45,9 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
     if size >= @max_size do
       count = remove(table, @eviction_count)
       :telemetry.execute([:ex_limiter, :shards, :evictions], %{value: count})
-      :erlang.garbage_collect()
     end
     :telemetry.execute([:ex_limiter, :shards, :size], %{value: size})
-    {:noreply, table}
+    {:noreply, table, :hibernate}
   end
 
   def remove(table, count) do
