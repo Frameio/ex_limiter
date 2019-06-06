@@ -42,9 +42,12 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
     GenServer.start_link(__MODULE__, [])
   end
 
+  def group(), do: @process_group
+
   def init(_) do
     :pg2.create(@process_group)
     :pg2.join(@process_group, self())
+
     {:ok, Pruner.table()}
   end
 

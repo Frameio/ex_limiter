@@ -7,7 +7,7 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
   storage backend to work.
   """
   use Supervisor
-  alias ExLimiter.Storage.PG2Shard.{Worker, Router, Pruner}
+  alias ExLimiter.Storage.PG2Shard.{Worker, Router, Pruner, Shutdown}
   @telemetry Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:telemetry] || Worker
 
   def start_link(_args \\ :ok) do
@@ -20,7 +20,7 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
 
     :telemetry.attach_many("exlimiter-metrics-handler", Worker.telemetry_events(), &@telemetry.handle_event/4, nil)
 
-    Supervisor.init([{Pruner, []} | children], strategy: :one_for_one)
+    Supervisor.init([{Pruner, []}, {Shutdown, []} | children], strategy: :one_for_one)
   end
 
   def handle_event(_, _, _, _), do: :ok

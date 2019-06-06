@@ -33,19 +33,20 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
     end
   end
 
+  def handle_cast(:refresh, table) do
+    {:noreply, regen(table)}
+  end
+
   def handle_info({:nodeup, _, _}, table) do
-    :ets.insert(table, {:ring, shard_ring()})
-    {:noreply, table}
+    {:noreply, regen(table)}
   end
 
   def handle_info({:nodedown, _, _}, table) do
-    :ets.insert(table, {:ring, shard_ring()})
-    {:noreply, table}
+    {:noreply, regen(table)}
   end
 
   def handle_info(:resync, table) do
-    :ets.insert(table, {:ring, shard_ring()})
-    {:noreply, table}
+    {:noreply, regen(table)}
   end
 
   def shards() do
@@ -55,6 +56,11 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
       {:error, _} -> []
       members -> members
     end
+  end
+
+  defp regen(table) do
+    :ets.insert(table, {:ring, shard_ring()})
+    table
   end
 
   defp shard_ring(), do: HashRing.new() |> HashRing.add_nodes(shards())
