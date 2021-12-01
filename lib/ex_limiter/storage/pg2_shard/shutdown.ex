@@ -21,7 +21,7 @@ defmodule ExLimiter.Storage.PG2Shard.Shutdown do
   end
 
   def terminate(_, pids) do
-    Enum.each(pids, &:pg2.leave(Worker.group(), &1))
+    Enum.each(pids, &:pg.leave(Worker.group(), &1))
     Node.list() |> Enum.each(&GenServer.cast({Router, &1}, :refresh))
     :timer.sleep(5_000)
   end
