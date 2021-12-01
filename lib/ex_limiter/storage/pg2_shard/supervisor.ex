@@ -19,6 +19,8 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
     children = [{Router, []} | shards] |> Enum.reverse()
 
     :telemetry.attach_many("exlimiter-metrics-handler", Worker.telemetry_events(), &@telemetry.handle_event/4, nil)
+    
+    {:ok, _pid} = :pg.start_link()
 
     Supervisor.init([{Pruner, []}, {Shutdown, []} | children], strategy: :one_for_one)
   end
