@@ -17,12 +17,11 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
   def init(_) do
     shards = Stream.cycle([{Worker, []}]) |> Enum.take(shard_count())
     children = [{Router, []} | shards] |> Enum.reverse()
+    children = [{:pg, []}, {Pruner, []}, {Shutdown, []} | children]
 
     :telemetry.attach_many("exlimiter-metrics-handler", Worker.telemetry_events(), &@telemetry.handle_event/4, nil)
-    
-    {:ok, _pid} = :pg.start_link()
 
-    Supervisor.init([{Pruner, []}, {Shutdown, []} | children], strategy: :one_for_one)
+    Supervisor.init(children, strategy: :one_for_one)
   end
 
   def handle_event(_, _, _, _), do: :ok
