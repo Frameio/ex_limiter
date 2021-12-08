@@ -50,12 +50,7 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
   end
 
   def shards() do
-    :pg2.create(@process_group)
-    :pg2.get_members(@process_group)
-    |> case do
-      {:error, _} -> []
-      members -> members
-    end
+    :pg.get_members(@process_group)
   end
 
   defp regen(table) do
