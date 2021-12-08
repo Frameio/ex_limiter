@@ -17,7 +17,7 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
   def init(_) do
     shards = Stream.cycle([{Worker, []}]) |> Enum.take(shard_count())
     children = [{Router, []} | shards] |> Enum.reverse()
-    children = [{:pg, []}, {Pruner, []}, {Shutdown, []} | children]
+    children = [pg_spec(), {Pruner, []}, {Shutdown, []} | children]
 
     :telemetry.attach_many("exlimiter-metrics-handler", Worker.telemetry_events(), &@telemetry.handle_event/4, nil)
 
@@ -25,6 +25,13 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
   end
 
   def handle_event(_, _, _, _), do: :ok
+
+  defp pg_spec do
+    %{
+      id: :pg,
+      start: {:pg, :start_link, []}
+    }
+  end
 
   defp shard_count() do
     Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)
