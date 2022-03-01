@@ -28,7 +28,7 @@ defmodule ExLimiter.Mixfile do
 
   defp deps do
     [
-      {:memcachir, "~> 3.2.0", run_in_test()},
+      {:memcachir, "~> 3.3.1", run_in_test()},
       {:plug, "~> 1.4"},
       {:libring, "~> 1.0"},
       {:telemetry, "~> 0.4 or ~> 1.0"},
