@@ -31,7 +31,7 @@ defmodule ExLimiter.Mixfile do
       {:memcachir, "~> 3.2.0", run_in_test()},
       {:plug, "~> 1.4"},
       {:libring, "~> 1.0"},
-      {:telemetry, "~> 0.4.0"},
+      {:telemetry, "~> 0.4 or ~> 1.0"},
       {:ex2ms, "~> 1.5"},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
