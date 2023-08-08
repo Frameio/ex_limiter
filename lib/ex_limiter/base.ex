@@ -15,14 +15,10 @@ defmodule ExLimiter.Base do
       import ExLimiter.Base
       @storage unquote(storage)
 
-      @spec remaining(bucket :: binary | Bucket.t(), opts :: keyword) :: {:ok, Bucket.t} | {:error, :rate_limited}
+      @spec remaining(bucket :: binary(), opts :: keyword) :: integer()
       def remaining(bucket, opts \\ [])
 
       def remaining(bucket, opts) when is_binary(bucket) do
-        remaining(@storage, bucket, opts)
-      end
-
-      def remaining(%Bucket{} = bucket, opts) do
         remaining(@storage, bucket, opts)
       end
 
