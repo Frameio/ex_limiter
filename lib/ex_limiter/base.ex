@@ -62,9 +62,11 @@ defmodule ExLimiter.Base do
 
     %Bucket{value: val} = leak(storage, bucket)
 
-    mult = scale / limit
+    mult = Integer.floor_div(scale, limit)
 
-    round(max((scale - val) / mult, 0))
+    (scale - val)
+    |> Integer.floor_div(mult)
+    |> max(0)
   end
 
   defp leak(storage, bucket) do
