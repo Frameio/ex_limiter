@@ -33,13 +33,3 @@ defmodule MyLimiter do
   use ExLimiter.Base, storage: MyStorage
 end
 ```
-
-## ExLimiter.Plug
-
-ExLimiter also ships with a simple plug implementation.  Usage is
-
-```elixir
-plug ExLimiter.Plug, scale: 5000, limit: 20
-```
-
-You can also configure how the bucket is inferred from the given conn, how many tokens to consume and what limiter to use.

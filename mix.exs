@@ -30,7 +30,6 @@ defmodule ExLimiter.Mixfile do
   defp deps do
     [
       {:memcachir, "~> 3.3.0"},
-      {:plug, "~> 1.14"},
       {:ex_doc, "~> 0.19", only: :dev}
     ]
   end
