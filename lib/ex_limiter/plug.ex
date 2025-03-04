@@ -42,22 +42,22 @@ defmodule ExLimiter.Plug do
   @limiter Application.get_env(:ex_limiter, __MODULE__)[:limiter]
 
   defmodule Config do
+    @moduledoc false
     @limit Application.get_env(:ex_limiter, ExLimiter.Plug)[:limit]
     @scale Application.get_env(:ex_limiter, ExLimiter.Plug)[:scale]
     @fallback Application.get_env(:ex_limiter, ExLimiter.Plug)[:fallback]
 
-    defstruct [
-      scale: @scale,
-      limit: @limit,
-      bucket: &ExLimiter.Plug.get_bucket/1,
-      consumes: nil,
-      decorate: nil,
-      fallback: @fallback,
-    ]
+    defstruct scale: @scale,
+              limit: @limit,
+              bucket: &ExLimiter.Plug.get_bucket/1,
+              consumes: nil,
+              decorate: nil,
+              fallback: @fallback
 
     def new(opts) do
       contents =
-        Enum.into(opts, %{})
+        opts
+        |> Map.new()
         |> Map.put_new(:consumes, fn _ -> 1 end)
         |> Map.put_new(:decorate, &ExLimiter.Plug.decorate/2)
 
@@ -75,12 +75,19 @@ defmodule ExLimiter.Plug do
     |> halt()
   end
 
-  @spec decorate(Plug.Conn.t, {:ok, Bucket.t} | {:rate_limited, bucket_name :: binary}) :: Plug.Conn.t
+  @spec decorate(Plug.Conn.t(), {:ok, Bucket.t()} | {:rate_limited, bucket_name :: binary}) :: Plug.Conn.t()
   def decorate(conn, _), do: conn
 
   def init(opts), do: Config.new(opts)
 
-  def call(conn, %Config{bucket: bucket_fun, scale: scale, limit: limit, consumes: consume_fun, decorate: decorate_fun, fallback: fallback}) do
+  def call(conn, %Config{
+        bucket: bucket_fun,
+        scale: scale,
+        limit: limit,
+        consumes: consume_fun,
+        decorate: decorate_fun,
+        fallback: fallback
+      }) do
     bucket_name = bucket_fun.(conn)
 
     bucket_name
@@ -94,6 +101,7 @@ defmodule ExLimiter.Plug do
         |> put_resp_header("x-ratelimit-window", to_string(scale))
         |> put_resp_header("x-ratelimit-remaining", to_string(remaining))
         |> decorate_fun.(response)
+
       {:error, :rate_limited} ->
         conn
         |> decorate_fun.({:rate_limited, bucket_name})

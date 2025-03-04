@@ -7,16 +7,22 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
   storage backend to work.
   """
   use Supervisor
-  alias ExLimiter.Storage.PG2Shard.{Worker, Router, Pruner, Shutdown}
-  @telemetry Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)[:telemetry] || Worker
+
+  alias ExLimiter.Storage.PG2Shard
+  alias ExLimiter.Storage.PG2Shard.Pruner
+  alias ExLimiter.Storage.PG2Shard.Router
+  alias ExLimiter.Storage.PG2Shard.Shutdown
+  alias ExLimiter.Storage.PG2Shard.Worker
+
+  @telemetry Application.get_env(:ex_limiter, PG2Shard)[:telemetry] || Worker
 
   def start_link(_args \\ :ok) do
     Supervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   def init(_) do
-    shards = Stream.cycle([{Worker, []}]) |> Enum.take(shard_count())
-    children = [{Router, []} | shards] |> Enum.reverse()
+    shards = [{Worker, []}] |> Stream.cycle() |> Enum.take(shard_count())
+    children = Enum.reverse([{Router, []} | shards])
     children = [pg_spec(), {Pruner, []}, {Shutdown, []} | children]
 
     :telemetry.attach_many("exlimiter-metrics-handler", Worker.telemetry_events(), &@telemetry.handle_event/4, nil)
@@ -33,8 +39,9 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
     }
   end
 
-  defp shard_count() do
-    Application.get_env(:ex_limiter, ExLimiter.Storage.PG2Shard)
+  defp shard_count do
+    :ex_limiter
+    |> Application.get_env(PG2Shard)
     |> Keyword.get(:shard_count, 0)
   end
 end

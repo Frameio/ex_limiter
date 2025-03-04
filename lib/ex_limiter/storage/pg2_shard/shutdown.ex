@@ -3,7 +3,9 @@ defmodule ExLimiter.Storage.PG2Shard.Shutdown do
   Traps exits and notifies other nodes to resync on shutdowns.
   """
   use GenServer
-  alias ExLimiter.Storage.PG2Shard.{Router, Worker}
+
+  alias ExLimiter.Storage.PG2Shard.Router
+  alias ExLimiter.Storage.PG2Shard.Worker
 
   def start_link(_ \\ :ok) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
@@ -22,7 +24,7 @@ defmodule ExLimiter.Storage.PG2Shard.Shutdown do
 
   def terminate(_, pids) do
     Enum.each(pids, &:pg.leave(Worker.group(), &1))
-    Node.list() |> Enum.each(&GenServer.cast({Router, &1}, :refresh))
+    Enum.each(Node.list(), &GenServer.cast({Router, &1}, :refresh))
     :timer.sleep(5_000)
   end
 end
