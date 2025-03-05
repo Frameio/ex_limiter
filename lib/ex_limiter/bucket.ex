@@ -1,14 +1,13 @@
 defmodule ExLimiter.Bucket do
+  @moduledoc false
   alias ExLimiter.Utils
 
   @type t :: %__MODULE__{}
 
-  defstruct [
-    key: nil,
-    value: 0,
-    last: nil,
-    version: %{}
-  ]
+  defstruct key: nil,
+            value: 0,
+            last: nil,
+            version: %{}
 
   def new(key), do: %__MODULE__{key: key, last: Utils.now()}
 

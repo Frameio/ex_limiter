@@ -8,8 +8,8 @@ defmodule ExLimiter.Mixfile do
       app: :ex_limiter,
       version: @version,
       elixir: "~> 1.7",
-      start_permanent: Mix.env == :prod,
-      elixirc_paths: elixirc_paths(Mix.env),
+      start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
       description: description(),
       package: package(),
@@ -28,16 +28,17 @@ defmodule ExLimiter.Mixfile do
 
   defp deps do
     [
-      {:memcachir, "~> 3.3.1", run_in_test()},
+      {:memcachir, "~> 3.3.1", [optional: true] ++ run_in_test()},
       {:plug, "~> 1.4"},
       {:libring, "~> 1.0"},
       {:telemetry, "~> 0.4 or ~> 1.0"},
       {:ex2ms, "~> 1.5"},
-      {:ex_doc, "~> 0.19", only: :dev}
+      {:ex_doc, "~> 0.19", only: :dev},
+      {:styler, ">= 0.0.0", only: [:dev, :test], runtime: false}
     ]
   end
 
-  defp docs() do
+  defp docs do
     [
       main: "readme",
       extras: ["README.md"],
@@ -46,18 +47,18 @@ defmodule ExLimiter.Mixfile do
     ]
   end
 
-  defp run_in_test() do
-    case Mix.env do
+  defp run_in_test do
+    case Mix.env() do
       :test -> []
       _ -> [runtime: false]
     end
   end
 
-  defp description() do
+  defp description do
     "Token bucket rate limiter written in elixir with configurable backends"
   end
 
-  defp package() do
+  defp package do
     [
       maintainers: ["Michael Guarino"],
       licenses: ["MIT"],

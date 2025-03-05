@@ -22,7 +22,7 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
     table = :ets.new(@table_name, [:set, :protected, :named_table, {:read_concurrency, true}])
     :ets.insert(table, {:ring, shard_ring()})
     :timer.send_interval(1000, :resync)
-    send self(), :resync
+    send(self(), :resync)
     {:ok, table}
   end
 
@@ -49,7 +49,7 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
     {:noreply, regen(table)}
   end
 
-  def shards() do
+  def shards do
     :pg.get_members(@process_group)
   end
 
@@ -58,5 +58,5 @@ defmodule ExLimiter.Storage.PG2Shard.Router do
     table
   end
 
-  defp shard_ring(), do: HashRing.new() |> HashRing.add_nodes(shards())
+  defp shard_ring, do: HashRing.add_nodes(HashRing.new(), shards())
 end

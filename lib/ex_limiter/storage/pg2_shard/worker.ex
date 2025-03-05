@@ -28,6 +28,7 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   ```
   """
   use GenServer
+
   alias ExLimiter.Bucket
   alias ExLimiter.Storage.PG2Shard.Pruner
 
@@ -38,11 +39,11 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
     [:ex_limiter, :shards, :expirations]
   ]
 
-  def start_link() do
+  def start_link do
     GenServer.start_link(__MODULE__, [])
   end
 
-  def group(), do: @process_group
+  def group, do: @process_group
 
   def init(_) do
     :pg.join(@process_group, self())
@@ -51,7 +52,7 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   end
 
   def handle_call({:update, key, fun}, _from, table) do
-    bucket = fetch(table, key) |> fun.()
+    bucket = table |> fetch(key) |> fun.()
     {:reply, bucket, upsert(table, key, bucket)}
   end
 
@@ -62,7 +63,7 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   end
 
   def handle_call({:leak_and_consume, key, update_fn, boundary_fn, incr}, _from, table) do
-    with %{value: val} = bucket <- fetch(table, key) |> update_fn.(),
+    with %{value: val} = bucket <- table |> fetch(key) |> update_fn.(),
          {_old_bucket, %{} = bucket} <- {bucket, boundary_fn.(bucket)} do
       bucket = %{bucket | value: val + incr}
       {:reply, {:ok, bucket}, upsert(table, key, bucket)}
@@ -93,7 +94,7 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
 
   def handle_event(_, _, _, _), do: :ok
 
-  def telemetry_events(), do: @telemetry_events
+  def telemetry_events, do: @telemetry_events
 
   defp upsert(table, key, bucket) do
     :ets.insert(table, {key, bucket.last, bucket})
