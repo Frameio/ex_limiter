@@ -1,0 +1,56 @@
+name: Elixir CI
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - elixir: "1.15"
+            otp: "25"
+          - elixir: "1.18"
+            otp: "27"
+            lint: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{matrix.otp}}
+          elixir-version: ${{matrix.elixir}}
+
+      - name: Restore dependencies cache
+        uses: actions/cache@v3
+        with:
+          path: deps
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: mix deps.get
+        
+      - name: Compile
+        run: mix compile --warnings-as-errors
+        
+      - name: Run tests
+        run: mix test
+        
+      - name: checks that the mix.lock file has no unused deps 
+        run: mix deps.unlock --check-unused
+        if: ${{ matrix.lint }}
+
+      - name: check if files are already formatted
+        run: mix format --check-formatted
+        if: ${{ matrix.lint }}
