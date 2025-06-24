@@ -97,16 +97,24 @@ defmodule ExLimiter.Plug do
         remaining = @limiter.remaining(bucket, scale: scale, limit: limit)
 
         conn
-        |> put_resp_header("x-ratelimit-limit", to_string(limit))
-        |> put_resp_header("x-ratelimit-window", to_string(scale))
-        |> put_resp_header("x-ratelimit-remaining", to_string(remaining))
+        |> put_rate_limit_headers(limit, scale, remaining)
         |> decorate_fun.(response)
 
       {:error, :rate_limited} ->
+        remaining = @limiter.remaining(%ExLimiter.Bucket{key: bucket_name}, scale: scale, limit: limit)
+
         conn
+        |> put_rate_limit_headers(limit, scale, remaining)
         |> decorate_fun.({:rate_limited, bucket_name})
         |> fallback.render_error(:rate_limited)
     end
+  end
+
+  defp put_rate_limit_headers(conn, limit, scale, remaining) do
+    conn
+    |> put_resp_header("x-ratelimit-limit", Integer.to_string(limit))
+    |> put_resp_header("x-ratelimit-window", Integer.to_string(scale))
+    |> put_resp_header("x-ratelimit-remaining", Integer.to_string(remaining))
   end
 
   defp ip(conn), do: conn.remote_ip |> Tuple.to_list() |> Enum.join(".")
