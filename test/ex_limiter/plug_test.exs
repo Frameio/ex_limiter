@@ -15,15 +15,15 @@ defmodule ExLimiter.PlugTest do
     end
 
     test "It will reject if the rate limit has been exceeded", %{limiter: config, conn: conn} do
-      conn =
-        %{conn | params: %{"count" => 11}}
-         |> ExLimiter.Plug.call(config)
+      conn = ExLimiter.Plug.call(%{conn | params: %{"count" => 11}}, config)
 
       assert conn.status == 429
 
-      refute Enum.empty?(get_resp_header(conn, "x-ratelimit-limit"))
-      refute Enum.empty?(get_resp_header(conn, "x-ratelimit-window"))
-      refute Enum.empty?(get_resp_header(conn, "x-ratelimit-remaining"))
+      for header <- ~w(x-ratelimit-limit x-ratelimit-window x-ratelimit-remaining) do
+        value = conn |> get_resp_header(header) |> List.first()
+
+        assert {_integer, ""} = Integer.parse(value)
+      end
     end
 
     test "it will respect scaling params", %{limiter: config, conn: conn} do
