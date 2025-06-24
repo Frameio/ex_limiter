@@ -20,6 +20,10 @@ defmodule ExLimiter.PlugTest do
          |> ExLimiter.Plug.call(config)
 
       assert conn.status == 429
+
+      refute Enum.empty?(get_resp_header(conn, "x-ratelimit-limit"))
+      refute Enum.empty?(get_resp_header(conn, "x-ratelimit-window"))
+      refute Enum.empty?(get_resp_header(conn, "x-ratelimit-remaining"))
     end
 
     test "it will respect scaling params", %{limiter: config, conn: conn} do
