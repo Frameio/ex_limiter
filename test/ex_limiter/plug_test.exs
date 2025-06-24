@@ -1,6 +1,7 @@
 defmodule ExLimiter.PlugTest do
   use ExUnit.Case
   use Plug.Test
+
   alias ExLimiter.TestUtils
 
   describe "#call/2" do
@@ -65,14 +66,17 @@ defmodule ExLimiter.PlugTest do
   defp decorate(conn, {:ok, %{key: bucket_name, version: bucket_version}}) do
     assign(conn, :ex_limiter, %{bucket_name: bucket_name, bucket_version: bucket_version})
   end
+
   defp decorate(conn, {:rate_limited, bucket_name}) do
     assign(conn, :ex_limiter, %{bucket_name: bucket_name})
   end
 
   defp setup_conn(_) do
-    random =  TestUtils.rand_string()
+    random = TestUtils.rand_string()
+
     conn =
-      conn(:get, "/")
+      :get
+      |> conn("/")
       |> merge_private(phoenix_controller: random, phoenix_action: random)
 
     [conn: conn]
