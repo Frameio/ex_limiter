@@ -13,6 +13,11 @@ jobs:
   build:
     name: Build and test
     runs-on: ubuntu-latest
+    services:
+      memcached:
+        image: memcached:alpine
+        ports:
+          - 11211:11211
     strategy:
       matrix:
         include:
