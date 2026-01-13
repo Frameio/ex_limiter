@@ -53,17 +53,21 @@ defmodule ExLimiter.Base do
 
     storage.leak_and_consume(
       bucket,
-      fn %Bucket{value: value, last: time} = b ->
-        now = Utils.now()
-        amount = max(value - (now - time), 0)
-
-        %{b | last: now, value: amount}
-      end,
-      fn
-        %Bucket{value: v} = b when v + incr <= scale -> b
-        _ -> {:error, :rate_limited}
-      end,
+      &__MODULE__.update/1,
+      &__MODULE__.boundary(&1, incr, scale),
       incr
     )
   end
+
+  @doc false
+  def update(%Bucket{value: value, last: time} = b) do
+    now = Utils.now()
+    amount = max(value - (now - time), 0)
+
+    %{b | last: now, value: amount}
+  end
+
+  @doc false
+  def boundary(%Bucket{value: v} = b, incr, scale) when v + incr <= scale, do: b
+  def boundary(_, _, _), do: {:error, :rate_limited}
 end
