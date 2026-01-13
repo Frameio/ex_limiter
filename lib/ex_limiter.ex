@@ -22,5 +22,5 @@ defmodule ExLimiter do
         use ExLimiter.Base, storage: MyStorage
       end
   """
-  use ExLimiter.Base, storage: Application.compile_env(:ex_limiter, :storage)
+  use ExLimiter.Base, storage: Application.compile_env(:ex_limiter, :storage, ExLimiter.Storage.Memcache)
 end
