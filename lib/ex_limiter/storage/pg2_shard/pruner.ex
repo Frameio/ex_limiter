@@ -5,15 +5,12 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   """
   use GenServer
 
-  import Ex2ms
-
   alias ExLimiter.Storage.PG2Shard
   alias ExLimiter.Utils
 
   @table_name :exlimiter_buckets
   @compile_opts Application.compile_env(:ex_limiter, PG2Shard, [])
-  @expiry @compile_opts[:expiry] || 10 * 60_000
-  @eviction_count @compile_opts[:eviction_count] || 1000
+  @expiry @compile_opts[:expiry] || @eviction_count(@compile_opts[:eviction_count] || 1000)
   @max_size @compile_opts[:max_size] || 50_000
   @prune_interval @compile_opts[:prune_interval] || 5_000
   @eviction_interval @compile_opts[:eviction_interval] || 30_000
@@ -41,9 +38,9 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
     count =
       :ets.select_delete(
         table,
-        fun do
-          {_, updated_at, _} when updated_at < ^now - ^@expiry -> true
-        end
+        [
+          {{:_, :"$1", :_}, [{:<, :"$1", {:-, {:const, now}, {:const, @expiry}}}], [true]}
+        ]
       )
 
     :telemetry.execute([:ex_limiter, :shards, :expirations], %{value: count})
