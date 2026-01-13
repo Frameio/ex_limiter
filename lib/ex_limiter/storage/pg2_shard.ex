@@ -5,18 +5,13 @@ defmodule ExLimiter.Storage.PG2Shard do
 
   To configure the pool size, do:
 
-  ```
-  config :ex_limit, ExLimiter.Storage.PG2Shard,
-    shard_count: 20
-  ```
+      config :ex_limit, ExLimiter.Storage.PG2Shard,
+        shard_count: 20
 
   You must also include the shard supervisor in your app supervision tree, with
   something like:
 
-  ```
-  ...
-  supervise(ExLimiter.Storage.PG2Shard.Supervisor, [])
-  ```
+      supervise(ExLimiter.Storage.PG2Shard.Supervisor, [])
   """
   use ExLimiter.Storage
 

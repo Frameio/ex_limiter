@@ -1,12 +1,12 @@
 defmodule ExLimiter.Base do
   @moduledoc """
-  Base module for arbitrary rate limiter implementations.  Usage is:
+  Base module for arbitrary rate limiter implementations.
 
-  ```
-  defmodule MyLimiter do
-    use ExLimiterBase, storage: MyCustomStorage
-  end
-  ```
+  Usage is:
+
+      defmodule MyLimiter do
+        use ExLimiterBase, storage: MyCustomStorage
+      end
   """
   alias ExLimiter.Bucket
   alias ExLimiter.Utils
@@ -28,12 +28,14 @@ defmodule ExLimiter.Base do
       Consumes `amount` from the rate limiter aliased by bucket.
 
       `opts` params are:
+
       * `:limit` - the maximum amount for the rate limiter (default 10)
       * `:scale` - the duration under which `:limit` applies in milliseconds
       """
       @spec consume(bucket :: binary, amount :: integer, opts :: keyword) :: {:ok, Bucket.t()} | {:error, :rate_limited}
       def consume(bucket, amount \\ 1, opts \\ []), do: consume(@storage, bucket, amount, opts)
 
+      @doc "Deletes the bucket from the storage"
       def delete(bucket), do: @storage.delete(%Bucket{key: bucket})
     end
   end
