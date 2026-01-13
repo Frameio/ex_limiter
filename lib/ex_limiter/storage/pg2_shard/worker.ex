@@ -4,28 +4,23 @@ defmodule ExLimiter.Storage.PG2Shard.Worker do
   of buckets.
 
   Buckets are pruned after 10 minutes of inactivity, and buckets will be evicted
-  if a maximum threshold is reached.  To tune these values, use:
+  if a maximum threshold is reached. To tune these values, use:
 
-  ```
-  config :ex_limiter, ExLimiter.Storage.PG2Shard,
-    max_size: 50_000,
-    eviction_count: 1000
-  ```
+      config :ex_limiter, ExLimiter.Storage.PG2Shard,
+        max_size: 50_000,
+        eviction_count: 1000
 
   It will also publish these metrics via telemetry:
 
-  ```
-  [:ex_limiter, :shards, :map_size],
-  [:ex_limiter, :shards, :evictions],
-  [:ex_limiter, :shards, :expirations]
-  ```
+
+      [:ex_limiter, :shards, :map_size],
+      [:ex_limiter, :shards, :evictions],
+      [:ex_limiter, :shards, :expirations]
 
   You can auto-configure a telemetry handler via:
 
-  ```
-  config :ex_limiter, ExLimiter.Storage.PG2Shard,
-    telemetry: MyTelemetryHandler
-  ```
+      config :ex_limiter, ExLimiter.Storage.PG2Shard,
+      telemetry: MyTelemetryHandler
   """
   use GenServer
 

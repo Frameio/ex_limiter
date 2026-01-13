@@ -1,10 +1,10 @@
 defmodule ExLimiter.Plug do
   @moduledoc """
-  Plug for enforcing rate limits.  The usage should be something like
+  Plug for enforcing rate limits.
 
-  ```
-  plug ExLimiter.Plug, scale: 1000, limit: 5
-  ```
+  The usage should be something like
+
+      plug ExLimiter.Plug, scale: 1000, limit: 5
 
   Additionally, you can pass the following options:
 
@@ -25,15 +25,11 @@ defmodule ExLimiter.Plug do
 
   Additionally, you can configure a custom limiter with
 
-  ```
-  config :ex_limiter, ExLimiter.Plug, limiter: MyLimiter
-  ```
+      config :ex_limiter, ExLimiter.Plug, limiter: MyLimiter
 
   and you can also configure the rate limited response with
 
-  ```
-  config :ex_limiter, ExLimiter.Plug, fallback: MyFallback
-  ```
+      config :ex_limiter, ExLimiter.Plug, fallback: MyFallback
 
   `MyFallback` needs to implement a function `render_error(conn, :rate_limited)`
   """
@@ -91,9 +87,7 @@ defmodule ExLimiter.Plug do
       }) do
     bucket_name = bucket_fun.(conn)
 
-    bucket_name
-    |> @limiter.consume(consume_fun.(conn), scale: scale, limit: limit)
-    |> case do
+    case @limiter.consume(bucket_name, consume_fun.(conn), scale: scale, limit: limit) do
       {:ok, bucket} = response ->
         remaining = @limiter.remaining(bucket, scale: scale, limit: limit)
 
