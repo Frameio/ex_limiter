@@ -25,5 +25,5 @@ defmodule ExLimiter do
   end
   ```
   """
-  use ExLimiter.Base, storage: Application.get_env(:ex_limiter, :storage)
+  use ExLimiter.Base, storage: Application.compile_env(:ex_limiter, :storage)
 end
