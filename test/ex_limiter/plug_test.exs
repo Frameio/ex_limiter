@@ -1,6 +1,7 @@
 defmodule ExLimiter.PlugTest do
   use ExUnit.Case
-  use Plug.Test
+  import Plug.Test
+  import Plug.Conn
 
   alias ExLimiter.TestUtils
 

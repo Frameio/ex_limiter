@@ -39,13 +39,14 @@ defmodule ExLimiter.Plug do
   """
   import Plug.Conn
 
-  @limiter Application.get_env(:ex_limiter, __MODULE__)[:limiter]
+  @limiter Application.compile_env(:ex_limiter, __MODULE__)[:limiter]
 
   defmodule Config do
     @moduledoc false
-    @limit Application.get_env(:ex_limiter, ExLimiter.Plug)[:limit]
-    @scale Application.get_env(:ex_limiter, ExLimiter.Plug)[:scale]
-    @fallback Application.get_env(:ex_limiter, ExLimiter.Plug)[:fallback]
+    @opts Application.compile_env(:ex_limiter, ExLimiter.Plug)
+    @limit @opts[:limit]
+    @scale @opts[:scale]
+    @fallback @opts[:fallback]
 
     defstruct scale: @scale,
               limit: @limit,
