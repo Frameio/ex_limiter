@@ -11,12 +11,12 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   alias ExLimiter.Utils
 
   @table_name :exlimiter_buckets
-  @opts Application.compile_env(:ex_limiter, PG2Shard)
-  @expiry @opts[:expiry] || 10 * 60_000
-  @eviction_count @opts[:eviction_count] || 1000
-  @max_size @opts[:max_size] || 50_000
-  @prune_interval @opts[:prune_interval] || 5_000
-  @eviction_interval @opts[:eviction_interval] || 30_000
+  @compile_opts Application.compile_env(:ex_limiter, PG2Shard, [])
+  @expiry @compile_opts[:expiry] || 10 * 60_000
+  @eviction_count @compile_opts[:eviction_count] || 1000
+  @max_size @compile_opts[:max_size] || 50_000
+  @prune_interval @compile_opts[:prune_interval] || 5_000
+  @eviction_interval @compile_opts[:eviction_interval] || 30_000
 
   def start_link(_args \\ :ok) do
     GenServer.start_link(__MODULE__, [], name: __MODULE__)
