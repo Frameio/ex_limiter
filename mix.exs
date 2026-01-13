@@ -1,7 +1,7 @@
 defmodule ExLimiter.Mixfile do
   use Mix.Project
 
-  @version "1.5.0"
+  @version "1.5.1"
 
   def project do
     [
@@ -31,7 +31,7 @@ defmodule ExLimiter.Mixfile do
       {:memcachir, "~> 3.3.1", [optional: true] ++ run_in_test()},
       {:plug, "~> 1.4"},
       {:libring, "~> 1.0"},
-      {:telemetry, "~> 0.4 or ~> 1.0"},
+      {:telemetry, "~> 1.0"},
       {:ex2ms, "~> 1.5"},
       {:ex_doc, "~> 0.19", only: :dev},
       {:styler, ">= 0.0.0", only: [:dev, :test], runtime: false}

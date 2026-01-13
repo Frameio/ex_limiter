@@ -14,7 +14,7 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
   alias ExLimiter.Storage.PG2Shard.Shutdown
   alias ExLimiter.Storage.PG2Shard.Worker
 
-  @telemetry Application.compile_env(:ex_limiter, PG2Shard)[:telemetry] || Worker
+  @telemetry Application.compile_env(:ex_limiter, PG2Shard, [])[:telemetry] || Worker
 
   def start_link(_args \\ :ok) do
     Supervisor.start_link(__MODULE__, [], name: __MODULE__)
@@ -41,7 +41,7 @@ defmodule ExLimiter.Storage.PG2Shard.Supervisor do
 
   defp shard_count do
     :ex_limiter
-    |> Application.get_env(PG2Shard)
+    |> Application.get_env(PG2Shard, [])
     |> Keyword.get(:shard_count, 0)
   end
 end
