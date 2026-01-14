@@ -1,5 +1,6 @@
 defmodule ExLimiter.Storage.PG2ShardTest do
   use ExLimiter.DataCase, async: false
+
   alias ExLimiter.PG2Limiter
 
   setup do

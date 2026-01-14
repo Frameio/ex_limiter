@@ -3,7 +3,7 @@
     "mix.exs",
     ".formatter.exs",
     "config/*.exs",
-    "lib/**/*.ex"
+    "{lib,test}/**/*.{ex,exs}"
   ],
   line_length: 120,
   plugins: [Styler],

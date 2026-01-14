@@ -1,5 +1,6 @@
 defmodule ExLimiterTest do
   use ExLimiter.DataCase, async: true
+
   doctest ExLimiter
 
   setup do
