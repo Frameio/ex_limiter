@@ -1,7 +1,8 @@
 defmodule ExLimiter.PlugTest do
   use ExLimiter.DataCase
-  import Plug.Test
+
   import Plug.Conn
+  import Plug.Test
 
   describe "#call/2" do
     setup [:setup_limiter, :setup_conn]
