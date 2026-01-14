@@ -9,7 +9,8 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
 
   @table_name :exlimiter_buckets
   @compile_opts Application.compile_env(:ex_limiter, PG2Shard, [])
-  @expiry @compile_opts[:expiry] || @eviction_count(@compile_opts[:eviction_count] || 1000)
+  @expiry @compile_opts[:expiry_interval] || to_timeout(minute: 1)
+  @eviction_count @compile_opts[:eviction_count] || 1000
   @max_size @compile_opts[:max_size] || 50_000
   @prune_interval @compile_opts[:prune_interval] || 5_000
   @eviction_interval @compile_opts[:eviction_interval] || 30_000
@@ -87,5 +88,4 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   end
 
   defp process_batch(:"$end_of_table", count, _, _), do: count
-
 end
