@@ -1,7 +1,7 @@
 defmodule ExLimiter.Mixfile do
   use Mix.Project
 
-  @version "1.5.1"
+  @version "2.0.0"
 
   def project do
     [
@@ -28,7 +28,6 @@ defmodule ExLimiter.Mixfile do
 
   defp deps do
     [
-      {:memcachir, "~> 3.3.1", [optional: true] ++ run_in_test()},
       {:plug, "~> 1.4"},
       {:libring, "~> 1.0"},
       {:telemetry, "~> 1.0"},
@@ -44,13 +43,6 @@ defmodule ExLimiter.Mixfile do
       source_ref: "v#{@version}",
       source_url: "https://github.com/Frameio/ex_limiter"
     ]
-  end
-
-  defp run_in_test do
-    case Mix.env() do
-      :test -> []
-      _ -> [runtime: false]
-    end
   end
 
   defp description do
