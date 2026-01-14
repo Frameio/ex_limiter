@@ -1,9 +1,7 @@
 defmodule ExLimiter.PlugTest do
-  use ExUnit.Case
+  use ExLimiter.DataCase
   import Plug.Test
   import Plug.Conn
-
-  alias ExLimiter.TestUtils
 
   describe "#call/2" do
     setup [:setup_limiter, :setup_conn]
@@ -73,7 +71,7 @@ defmodule ExLimiter.PlugTest do
   end
 
   defp setup_conn(_) do
-    random = TestUtils.rand_string()
+    random = Base.encode64(:crypto.strong_rand_bytes(8))
 
     conn =
       :get
