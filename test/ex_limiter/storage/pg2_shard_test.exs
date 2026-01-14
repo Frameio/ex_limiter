@@ -1,11 +1,13 @@
 defmodule ExLimiter.Storage.PG2ShardTest do
-  use ExUnit.Case, async: false
+  use ExLimiter.DataCase, async: false
   alias ExLimiter.PG2Limiter
-  alias ExLimiter.TestUtils
+
+  setup do
+    {:ok, bucket_name: bucket_name()}
+  end
 
   describe "#consume" do
-    test "it will rate limit" do
-      bucket_name = bucket()
+    test "it will rate limit", %{bucket_name: bucket_name} do
       {:ok, bucket} = PG2Limiter.consume(bucket_name, 1)
 
       assert bucket.key == bucket_name
@@ -20,9 +22,7 @@ defmodule ExLimiter.Storage.PG2ShardTest do
   end
 
   describe "#delete" do
-    test "It will wipe a bucket" do
-      bucket_name = bucket()
-
+    test "It will wipe a bucket", %{bucket_name: bucket_name} do
       {:ok, bucket} = PG2Limiter.consume(bucket_name, 5)
 
       assert bucket.value >= 500
@@ -36,16 +36,10 @@ defmodule ExLimiter.Storage.PG2ShardTest do
   end
 
   describe "#remaining" do
-    test "It will properly deconvert the remaining capacity in a bucket" do
-      bucket_name = bucket()
-
+    test "It will properly deconvert the remaining capacity in a bucket", %{bucket_name: bucket_name} do
       {:ok, bucket} = PG2Limiter.consume(bucket_name, 5)
 
       assert PG2Limiter.remaining(bucket) == 5
     end
-  end
-
-  defp bucket() do
-    "test_bucket_#{TestUtils.rand_string()}"
   end
 end

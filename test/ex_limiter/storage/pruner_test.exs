@@ -1,5 +1,5 @@
 defmodule ExLimiter.Storage.PG2Shard.PrunerTest do
-  use ExUnit.Case, async: false
+  use ExLimiter.DataCase, async: false
   alias ExLimiter.Storage.PG2Shard.Pruner
 
   @table_name :pruner_test
