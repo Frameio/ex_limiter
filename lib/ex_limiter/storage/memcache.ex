@@ -5,8 +5,6 @@ defmodule ExLimiter.Storage.Memcache do
   """
   use ExLimiter.Storage
 
-  alias ExLimiter.Utils
-
   def fetch(%Bucket{key: key}) do
     key_map = keys(key)
 
@@ -88,12 +86,17 @@ defmodule ExLimiter.Storage.Memcache do
 
   defp add_result(%{version: versions} = acc, bucket_key, {val, cas}) do
     acc
-    |> Map.put(bucket_key, Utils.parse_integer(val))
+    |> Map.put(bucket_key, parse_integer(val))
     |> Map.put(:version, Map.put(versions, bucket_key, cas))
   end
 
   defp add_result(acc, bucket_key, _), do: add_result(acc, bucket_key, default(bucket_key))
 
   defp default(:value), do: {0, 0}
-  defp default(:last), do: {Utils.now(), 0}
+  defp default(:last), do: {System.system_time(:millisecond), 0}
+
+  def parse_integer(val) when is_binary(val), do: val |> Integer.parse() |> parse_integer()
+  def parse_integer(val) when is_integer(val), do: val
+  def parse_integer(:error), do: :error
+  def parse_integer({val, _}), do: val
 end
