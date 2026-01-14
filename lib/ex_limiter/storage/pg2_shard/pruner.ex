@@ -6,7 +6,6 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   use GenServer
 
   alias ExLimiter.Storage.PG2Shard
-  alias ExLimiter.Utils
 
   @table_name :exlimiter_buckets
   @compile_opts Application.compile_env(:ex_limiter, PG2Shard, [])
@@ -33,7 +32,7 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
 
   def handle_info(:expire, table) do
     expire()
-    now = Utils.now()
+    now = System.system_time(:millisecond)
 
     count =
       :ets.select_delete(
@@ -61,7 +60,7 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   end
 
   def remove(table, count) do
-    Utils.batched_ets(table, {:"$1", :_, :_}, 1000, count, fn keys ->
+    batched_ets(table, {:"$1", :_, :_}, 1000, count, fn keys ->
       for [key] <- keys,
           do: :ets.delete(table, key)
     end)
@@ -70,4 +69,23 @@ defmodule ExLimiter.Storage.PG2Shard.Pruner do
   defp prune, do: Process.send_after(self(), :prune, @prune_interval)
 
   defp expire, do: Process.send_after(self(), :expire, @eviction_interval)
+
+  defp batched_ets(table, match_spec, batch_size, total, fnc) do
+    table
+    |> :ets.match(match_spec, batch_size)
+    |> process_batch(0, total, fnc)
+  end
+
+  defp process_batch(_, count, total, _) when count >= total, do: count
+
+  defp process_batch({elem, cnt}, count, total, fnc) do
+    fnc.(elem)
+
+    cnt
+    |> :ets.match()
+    |> process_batch(length(elem) + count, total, fnc)
+  end
+
+  defp process_batch(:"$end_of_table", count, _, _), do: count
+
 end

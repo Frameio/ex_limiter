@@ -9,7 +9,6 @@ defmodule ExLimiter.Base do
       end
   """
   alias ExLimiter.Bucket
-  alias ExLimiter.Utils
 
   defmacro __using__(storage: storage) do
     quote do
@@ -61,7 +60,7 @@ defmodule ExLimiter.Base do
 
   @doc false
   def update(%Bucket{value: value, last: time} = b) do
-    now = Utils.now()
+    now = System.system_time(:millisecond)
     amount = max(value - (now - time), 0)
 
     %{b | last: now, value: amount}
