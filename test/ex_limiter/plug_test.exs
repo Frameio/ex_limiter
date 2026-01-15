@@ -83,7 +83,7 @@ defmodule ExLimiter.PlugTest do
   end
 
   defp setup_limiter(_) do
-    [limiter: ExLimiter.Plug.Config.new(consumes: &consumes/1)]
+    [limiter: ExLimiter.Plug.init(consumes: &consumes/1)]
   end
 
   defp consumes(%{params: %{"count" => count}}), do: count
