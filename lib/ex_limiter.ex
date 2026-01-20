@@ -11,8 +11,8 @@ defmodule ExLimiter do
   usage once configured is:
 
       case ExLimiter.consume(bucket, 1, scale: 1000, limit: 5) do
-        {:ok, bucket} -> #do some work
-        {:error, :rate_limited} -> #fail
+        {:ok, bucket} -> # do some work
+        {:error, :rate_limited} -> # fail
       end
 
   Additionally, if you want to have multiple rate limiters with diverse backend implementations,
@@ -22,5 +22,5 @@ defmodule ExLimiter do
         use ExLimiter.Base, storage: MyStorage
       end
   """
-  use ExLimiter.Base, storage: Application.compile_env(:ex_limiter, :storage, ExLimiter.Storage.Memcache)
+  use ExLimiter.Base, storage: Application.compile_env(:ex_limiter, :storage, ExLimiter.Storage.PG2Shard)
 end

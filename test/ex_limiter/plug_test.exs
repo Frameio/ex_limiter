@@ -47,7 +47,7 @@ defmodule ExLimiter.PlugTest do
       %{ex_limiter: %{bucket_name: bucket_name, bucket_version: bucket_version}} = conn.assigns
 
       assert String.ends_with?(bucket_name, "127.0.0.1")
-      assert bucket_version == %{last: 0, value: 0}
+      assert %{last: _, value: _} = bucket_version
     end
 
     test "it will decorate a connection on error", %{limiter: config, conn: conn} do
@@ -61,14 +61,14 @@ defmodule ExLimiter.PlugTest do
 
       assert String.ends_with?(bucket_name, "127.0.0.1")
     end
-  end
 
-  defp decorate(conn, {:ok, %{key: bucket_name, version: bucket_version}}) do
-    assign(conn, :ex_limiter, %{bucket_name: bucket_name, bucket_version: bucket_version})
-  end
+    defp decorate(conn, {:ok, %{key: bucket_name, value: value, last: last}}) do
+      assign(conn, :ex_limiter, %{bucket_name: bucket_name, bucket_version: %{last: last, value: value}})
+    end
 
-  defp decorate(conn, {:rate_limited, bucket_name}) do
-    assign(conn, :ex_limiter, %{bucket_name: bucket_name})
+    defp decorate(conn, {:rate_limited, bucket_name}) do
+      assign(conn, :ex_limiter, %{bucket_name: bucket_name})
+    end
   end
 
   defp setup_conn(_) do
